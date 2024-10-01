@@ -32,6 +32,11 @@ var Cell = cell.Module(
 	cell.Invoke(
 		registerFeatureManager,
 		newReconciler,
+		func(initializer func(txn statedb.WriteTxn), db *statedb.DB, tbl statedb.RWTable[*DynamicFeature]) {
+			wTxn := db.WriteTxn(tbl)
+			initializer(wTxn)
+			wTxn.Commit()
+		},
 	),
 
 	cell.Config(defaultConfig),

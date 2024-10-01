@@ -80,23 +80,20 @@ func newTableLifecycle(name DynamicFeatureName, deps ...DynamicFeatureName) *Dyn
 	}
 }
 
-func newTable(db *statedb.DB) (statedb.RWTable[*DynamicFeature], error) {
+func newTable(db *statedb.DB) (statedb.RWTable[*DynamicFeature], func(statedb.WriteTxn), error) {
 	tbl, err := statedb.NewTable(
 		TableName,
 		featureIndex,
 		statusIndex,
 	)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	err = db.RegisterTable(tbl)
 
 	wTxn := db.WriteTxn(tbl)
-
 	initializer := tbl.RegisterInitializer(wTxn, "dummyPending")
-	initializer(wTxn)
-
 	wTxn.Commit()
 
-	return tbl, err
+	return tbl, initializer, err
 }
