@@ -92,6 +92,14 @@ func (d *Manager) SetEnabled(feature DynamicFeatureName, enabled bool) {
 // Append adds the specified hook to the list of hooks managed for the given DynamicFeatureName.
 func (d *Manager) Append(feature DynamicFeatureName, hook cell.HookInterface) {
 	writeTxn := d.db.WriteTxn(d.dft)
+
+	initialized, _ := d.dft.Initialized(writeTxn)
+
+	if initialized {
+		d.l.Error("ALREADY INITIALIZED")
+		getLifecycleForHooks([]cell.HookInterface{hook}).PrintHooks()
+	}
+
 	obj, _, found := d.dft.Get(d.db.ReadTxn(), ByFeature(feature))
 	if !found {
 		d.l.Error("Not found when appending hook", "feature", feature)

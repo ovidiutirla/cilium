@@ -89,5 +89,14 @@ func newTable(db *statedb.DB) (statedb.RWTable[*DynamicFeature], error) {
 	if err != nil {
 		return nil, err
 	}
-	return tbl, db.RegisterTable(tbl)
+	err = db.RegisterTable(tbl)
+
+	wTxn := db.WriteTxn(tbl)
+
+	initializer := tbl.RegisterInitializer(wTxn, "dummyPending")
+	initializer(wTxn)
+
+	wTxn.Commit()
+
+	return tbl, err
 }
