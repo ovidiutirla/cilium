@@ -152,6 +152,9 @@
                         "podSecurityContext": {
                           "type": "object"
                         },
+                        "priorityClassName": {
+                          "type": "string"
+                        },
                         "resources": {
                           "type": "object"
                         },
@@ -358,6 +361,9 @@
                         },
                         "podSecurityContext": {
                           "type": "object"
+                        },
+                        "priorityClassName": {
+                          "type": "string"
                         },
                         "resources": {
                           "type": "object"
@@ -1697,9 +1703,6 @@
           "properties": {
             "persistentKeepalive": {
               "type": "string"
-            },
-            "userspaceFallback": {
-              "type": "boolean"
             }
           },
           "type": "object"
@@ -4896,6 +4899,17 @@
     },
     "routingMode": {
       "type": "string"
+    },
+    "scheduling": {
+      "properties": {
+        "mode": {
+          "enum": [
+            "anti-affinity",
+            "kube-scheduler"
+          ]
+        }
+      },
+      "type": "object"
     },
     "sctp": {
       "properties": {

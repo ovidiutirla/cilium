@@ -28,6 +28,21 @@ and flexible. To learn more about eBPF, visit `eBPF.io`_.
 .. image:: Documentation/images/cilium-overview.png
    :alt: Overview of Cilium features for networking, observability, service mesh, and runtime security
 
+.. raw:: html
+
+   <a href="https://cncf.io/">
+      <picture>
+         <source media="(prefers-color-scheme: light)" srcset="https://github.com/cncf/artwork/blob/main/other/cncf-member/graduated/color/cncf-graduated-color.svg" />
+         <img src="https://github.com/cncf/artwork/blob/main/other/cncf-member/graduated/white/cncf-graduated-white.svg" alt="CNCF Graduated Project" height="80" />
+      </picture>
+   </a>
+   <a href="https://ebpf.io/">
+      <picture>
+         <source media="(prefers-color-scheme: light)" srcset=".github/assets/powered-by-ebpf.svg" />
+         <img src=".github/assets/powered-by-ebpf_white.svg" alt="Powered by eBPF" height="80" align="right" />
+      </picture>
+   </a>
+
 Stable Releases
 ===============
 
@@ -385,9 +400,9 @@ and the `2-Clause BSD License <bsd-license_>`__
     :alt: FOSSA Status
     :target: https://app.fossa.com/projects/custom%2B162%2Fgit%40github.com%3Acilium%2Fcilium.git?ref=badge_shield
 
-.. |gateway-api| image:: https://img.shields.io/badge/Gateway%20API%20Conformance%20v1.0.0-Cilium-green
+.. |gateway-api| image:: https://img.shields.io/badge/Gateway%20API%20Conformance%20v1.2.0-Cilium-green
     :alt: Gateway API Status
-    :target: https://github.com/kubernetes-sigs/gateway-api/blob/main/conformance/reports/v1.0.0/cilium.yaml
+    :target: https://github.com/kubernetes-sigs/gateway-api/tree/main/conformance/reports/v1.2.0/cilium-cilium
 
 .. |codespaces| image:: https://img.shields.io/badge/Open_in_GitHub_Codespaces-gray?logo=github
     :alt: Github Codespaces

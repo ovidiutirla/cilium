@@ -272,6 +272,7 @@ Makefile* @cilium/build
 /bpf/custom/Makefile* @cilium/build @cilium/loader
 /bpf/lib/auth.h @cilium/sig-datapath @cilium/sig-servicemesh
 /bpf/lib/encrypt.h @cilium/ipsec
+/bpf/lib/policy.h @cilium/sig-datapath @cilium/sig-policy
 /bpf/lib/wireguard.h @cilium/wireguard @cilium/sig-datapath
 /bpf/bpf_wireguard.c @cilium/wireguard @cilium/sig-datapath
 /bpf/lib/ids.h @cilium/loader
@@ -341,7 +342,6 @@ Makefile* @cilium/build
 /daemon/cmd/endpoint* @cilium/endpoint
 /daemon/cmd/fqdn* @cilium/fqdn
 /daemon/cmd/health* @cilium/sig-agent
-/daemon/cmd/hubble.go @cilium/sig-hubble
 /daemon/cmd/ipcache* @cilium/ipcache
 /daemon/cmd/kube_proxy* @cilium/sig-datapath
 /daemon/cmd/bootstrap_statistics.go @cilium/metrics
@@ -487,6 +487,7 @@ Makefile* @cilium/build
 /pkg/components/ @cilium/sig-agent
 /pkg/container/ @cilium/sig-foundations
 /pkg/container/bitlpm/ @cilium/ipcache @cilium/sig-policy
+/pkg/container/set/ @cilium/sig-policy
 /pkg/controller @cilium/sig-agent
 /pkg/counter @cilium/sig-datapath
 /pkg/crypto/ @cilium/sig-hubble @cilium/sig-policy
@@ -517,6 +518,7 @@ Makefile* @cilium/build
 /pkg/endpointstate/ @cilium/endpoint
 /pkg/envoy/ @cilium/envoy
 /pkg/eventqueue/ @cilium/sig-agent
+/pkg/dynamiclifecycle/ @cilium/sig-foundations
 /pkg/flowdebug/ @cilium/proxy
 /pkg/fqdn/ @cilium/fqdn
 /pkg/fswatcher/ @cilium/sig-datapath @cilium/sig-hubble

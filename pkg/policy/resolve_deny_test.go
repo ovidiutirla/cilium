@@ -204,7 +204,7 @@ func TestRegenerateCIDRDenyPolicyRules(t *testing.T) {
 	n := epPolicy.policyMapState.Len()
 	epPolicy.Ready()
 	ip.Detach()
-	assert.True(t, n > 0)
+	assert.Positive(t, n)
 }
 
 func TestL3WithIngressDenyWildcard(t *testing.T) {
@@ -238,8 +238,8 @@ func TestL3WithIngressDenyWildcard(t *testing.T) {
 	_, _, err := repo.mustAdd(rule1)
 	require.NoError(t, err)
 
-	repo.Mutex.RLock()
-	defer repo.Mutex.RUnlock()
+	repo.mutex.RLock()
+	defer repo.mutex.RUnlock()
 	selPolicy, err := repo.resolvePolicyLocked(fooIdentity)
 	require.NoError(t, err)
 	policy := selPolicy.DistillPolicy(DummyOwner{}, false)
@@ -290,7 +290,7 @@ func TestL3WithIngressDenyWildcard(t *testing.T) {
 		policy.policyMapState.Diff(expectedEndpointPolicy.policyMapState))
 	policy.policyMapState = nil
 	expectedEndpointPolicy.policyMapState = nil
-	require.Equal(t, policy, &expectedEndpointPolicy)
+	require.Equal(t, &expectedEndpointPolicy, policy)
 }
 
 func TestL3WithLocalHostWildcardd(t *testing.T) {
@@ -330,8 +330,9 @@ func TestL3WithLocalHostWildcardd(t *testing.T) {
 	_, _, err := repo.mustAdd(rule1)
 	require.NoError(t, err)
 
-	repo.Mutex.RLock()
-	defer repo.Mutex.RUnlock()
+	repo.mutex.RLock()
+	defer repo.mutex.RUnlock()
+
 	selPolicy, err := repo.resolvePolicyLocked(fooIdentity)
 	require.NoError(t, err)
 	policy := selPolicy.DistillPolicy(DummyOwner{}, false)
@@ -385,7 +386,7 @@ func TestL3WithLocalHostWildcardd(t *testing.T) {
 		policy.policyMapState.Diff(expectedEndpointPolicy.policyMapState))
 	policy.policyMapState = nil
 	expectedEndpointPolicy.policyMapState = nil
-	require.Equal(t, policy, &expectedEndpointPolicy)
+	require.Equal(t, &expectedEndpointPolicy, policy)
 }
 
 func TestMapStateWithIngressDenyWildcard(t *testing.T) {
@@ -425,8 +426,8 @@ func TestMapStateWithIngressDenyWildcard(t *testing.T) {
 	_, _, err := repo.mustAdd(rule1)
 	require.NoError(t, err)
 
-	repo.Mutex.RLock()
-	defer repo.Mutex.RUnlock()
+	repo.mutex.RLock()
+	defer repo.mutex.RUnlock()
 	selPolicy, err := repo.resolvePolicyLocked(fooIdentity)
 	require.NoError(t, err)
 
@@ -480,7 +481,7 @@ func TestMapStateWithIngressDenyWildcard(t *testing.T) {
 	// Cleanup the identities from the testSelectorCache
 	defer td.sc.UpdateIdentities(nil, added1, wg)
 	wg.Wait()
-	require.Equal(t, 0, len(policy.policyMapChanges.synced))
+	require.Empty(t, policy.policyMapChanges.synced)
 
 	// Have to remove circular reference before testing to avoid an infinite loop
 	policy.selectorPolicy.Detach()
@@ -495,7 +496,7 @@ func TestMapStateWithIngressDenyWildcard(t *testing.T) {
 		policy.policyMapState.Diff(expectedEndpointPolicy.policyMapState))
 	policy.policyMapState = nil
 	expectedEndpointPolicy.policyMapState = nil
-	require.Equal(t, policy, &expectedEndpointPolicy)
+	require.Equal(t, &expectedEndpointPolicy, policy)
 }
 
 func TestMapStateWithIngressDeny(t *testing.T) {
@@ -552,8 +553,8 @@ func TestMapStateWithIngressDeny(t *testing.T) {
 	_, _, err := repo.mustAdd(rule1)
 	require.NoError(t, err)
 
-	repo.Mutex.RLock()
-	defer repo.Mutex.RUnlock()
+	repo.mutex.RLock()
+	defer repo.mutex.RUnlock()
 	selPolicy, err := repo.resolvePolicyLocked(fooIdentity)
 	require.NoError(t, err)
 
@@ -669,5 +670,5 @@ func TestMapStateWithIngressDeny(t *testing.T) {
 		policy.policyMapState.Diff(expectedEndpointPolicy.policyMapState))
 	policy.policyMapState = nil
 	expectedEndpointPolicy.policyMapState = nil
-	require.Equal(t, policy, &expectedEndpointPolicy)
+	require.Equal(t, &expectedEndpointPolicy, policy)
 }

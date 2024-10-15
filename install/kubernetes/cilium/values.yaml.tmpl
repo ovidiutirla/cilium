@@ -189,6 +189,19 @@ image:
   # cilium-digest
   digest: ${CILIUM_DIGEST}
   useDigest: ${USE_DIGESTS}
+# -- Scheduling configurations for cilium pods
+scheduling:
+  # @schema
+  # enum: ["anti-affinity", "kube-scheduler"]
+  # @schema
+  # -- Mode specifies how Cilium daemonset pods should be scheduled to Nodes.
+  # `anti-affinity` mode applies a pod anti-affinity rule to the cilium daemonset.
+  # Pod anti-affinity may significantly impact scheduling throughput for large clusters.
+  # See: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
+  # `kube-scheduler` mode forgoes the anti-affinity rule for full scheduling throughput.
+  # Kube-scheduler avoids host port conflict when scheduling pods.
+  # @default -- Defaults to apply a pod anti-affinity rule to the agent pod - `anti-affinity`
+  mode: anti-affinity
 # -- Affinity for cilium-agent.
 affinity:
   podAntiAffinity:
@@ -982,8 +995,6 @@ encryption:
     # -- Enable IPsec encrypted overlay
     encryptedOverlay: false
   wireguard:
-    # -- Enables the fallback to the user-space implementation (deprecated).
-    userspaceFallback: false
     # -- Controls WireGuard PersistentKeepalive option. Set 0s to disable.
     persistentKeepalive: 0s
 endpointHealthChecking:
@@ -1460,7 +1471,7 @@ hubble:
           - ALL
     # -- hubble-relay service configuration.
     service:
-      # --- The type of service used for Hubble Relay access, either ClusterIP or NodePort.
+      # --- The type of service used for Hubble Relay access, either ClusterIP, NodePort or LoadBalancer.
       type: ClusterIP
       # --- The port to use when the service type is set to NodePort.
       nodePort: 31234
@@ -3524,6 +3535,8 @@ authentication:
           pullPolicy: "${PULL_POLICY}"
         # SPIRE agent configuration
         agent:
+          # -- The priority class to use for the spire agent
+          priorityClassName: ""
           # -- SPIRE agent image
           image:
             # @schema
@@ -3577,6 +3590,8 @@ authentication:
           # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container
           securityContext: {}
         server:
+          # -- The priority class to use for the spire server
+          priorityClassName: ""
           # -- SPIRE server image
           image:
             # @schema

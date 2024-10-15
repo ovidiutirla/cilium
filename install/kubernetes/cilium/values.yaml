@@ -189,6 +189,19 @@ image:
   # cilium-digest
   digest: ""
   useDigest: false
+# -- Scheduling configurations for cilium pods
+scheduling:
+  # @schema
+  # enum: ["anti-affinity", "kube-scheduler"]
+  # @schema
+  # -- Mode specifies how Cilium daemonset pods should be scheduled to Nodes.
+  # `anti-affinity` mode applies a pod anti-affinity rule to the cilium daemonset.
+  # Pod anti-affinity may significantly impact scheduling throughput for large clusters.
+  # See: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
+  # `kube-scheduler` mode forgoes the anti-affinity rule for full scheduling throughput.
+  # Kube-scheduler avoids host port conflict when scheduling pods.
+  # @default -- Defaults to apply a pod anti-affinity rule to the agent pod - `anti-affinity`
+  mode: anti-affinity
 # -- Affinity for cilium-agent.
 affinity:
   podAntiAffinity:
@@ -974,8 +987,6 @@ encryption:
     # -- Enable IPsec encrypted overlay
     encryptedOverlay: false
   wireguard:
-    # -- Enables the fallback to the user-space implementation (deprecated).
-    userspaceFallback: false
     # -- Controls WireGuard PersistentKeepalive option. Set 0s to disable.
     persistentKeepalive: 0s
 endpointHealthChecking:
@@ -1452,7 +1463,7 @@ hubble:
           - ALL
     # -- hubble-relay service configuration.
     service:
-      # --- The type of service used for Hubble Relay access, either ClusterIP or NodePort.
+      # --- The type of service used for Hubble Relay access, either ClusterIP, NodePort or LoadBalancer.
       type: ClusterIP
       # --- The port to use when the service type is set to NodePort.
       nodePort: 31234
@@ -2238,9 +2249,9 @@ envoy:
     # @schema
     override: ~
     repository: "quay.io/cilium/cilium-envoy"
-    tag: "v1.30.6-1727741038-3056acb56ecfedf13398e5072c8f73320fe5e06f"
+    tag: "v1.30.6-1728346971-e2dfcc576d5152c967479115e0e0a3905be766bb"
     pullPolicy: "Always"
-    digest: "sha256:8fb91b68a377aac38bf1ec115fd1ceb476e7e55dc55aa77d768128d749aca8ac"
+    digest: "sha256:8ce0d0514a70a4d9141d946491c9bfe5fd479c1992ab6ef06f9af99ab938d1d9"
     useDigest: true
   # -- Additional containers added to the cilium Envoy DaemonSet.
   extraContainers: []
@@ -3495,12 +3506,14 @@ authentication:
           # @schema
           override: ~
           repository: "docker.io/library/busybox"
-          tag: "1.36.1"
-          digest: "sha256:c230832bd3b0be59a6c47ed64294f9ce71e91b327957920b6929a0caa8353140"
+          tag: "1.37.0"
+          digest: "sha256:768e5c6f5cb6db0794eec98dc7a967f40631746c32232b78a3105fb946f3ab83"
           useDigest: true
           pullPolicy: "Always"
         # SPIRE agent configuration
         agent:
+          # -- The priority class to use for the spire agent
+          priorityClassName: ""
           # -- SPIRE agent image
           image:
             # @schema
@@ -3554,6 +3567,8 @@ authentication:
           # ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container
           securityContext: {}
         server:
+          # -- The priority class to use for the spire server
+          priorityClassName: ""
           # -- SPIRE server image
           image:
             # @schema
