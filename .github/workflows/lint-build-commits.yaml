@@ -41,7 +41,7 @@ jobs:
           git config --global user.email "github-actions@users.noreply.github.com"
 
       - name: Checkout code
-        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
+        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
         with:
           persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha }}
@@ -55,11 +55,11 @@ jobs:
         with:
           cache: false
           # renovate: datasource=golang-version depName=go
-          go-version: 1.23.1
+          go-version: 1.23.2
 
       # Load Golang cache build from GitHub
       - name: Load Golang cache build from GitHub
-        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+        uses: actions/cache@3624ceb22c1c5a301c8db4169662070a689d9ea8 # v4.1.1
         id: go-cache
         with:
           path: /tmp/.cache/go
@@ -70,7 +70,7 @@ jobs:
 
       # Load CCache build from GitHub
       - name: Load ccache cache build from GitHub
-        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+        uses: actions/cache@3624ceb22c1c5a301c8db4169662070a689d9ea8 # v4.1.1
         id: ccache-cache
         with:
           path: /tmp/.cache/ccache
@@ -125,7 +125,11 @@ jobs:
           BUILDER_CCACHE_DIR: "/tmp/.cache/ccache/.ccache"
         run: |
           set -eu -o pipefail
-          COMMITS=$(git rev-list ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }})
+          if [[ "${{ github.event_name == 'push' || github.event_name == 'workflow_run' }}" == "true" ]]; then
+            COMMITS=${{ github.sha }}
+          else
+            COMMITS=$(git rev-list ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }})
+          fi
           for commit in $COMMITS ; do
             git checkout $commit || exit 1
             # Do not run make if there aren't any files modified in these
@@ -183,7 +187,11 @@ jobs:
         if: steps.test-tree.outputs.src == 'true'
         run: |
           set -eu -o pipefail
-          COMMITS=$(git rev-list ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }})
+          if [[ "${{ github.event_name == 'push' || github.event_name == 'workflow_run' }}" == "true" ]]; then
+            COMMITS=${{ github.sha }}
+          else
+            COMMITS=$(git rev-list ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }})
+          fi
           for commit in $COMMITS ; do
             git checkout $commit || exit 1
             # Do not run make if there aren't any files modified in these

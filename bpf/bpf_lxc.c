@@ -559,7 +559,6 @@ static __always_inline int handle_ipv6_from_lxc(struct __ctx_buff *ctx, __u32 *d
 		}
 		/* proxy_port remains 0 in this case */
 
-		policy_mark_skip(ctx);
 		break;
 	default:
 		return DROP_UNKNOWN_CT;
@@ -679,7 +678,7 @@ ct_recreate6:
 				goto pass_to_stack;
 			}
 #endif /* ENABLE_HOST_ROUTING || ENABLE_ROUTING */
-			policy_clear_mark(ctx);
+
 			/* If the packet is from L7 LB it is coming from the host */
 			return ipv6_local_delivery(ctx, ETH_HLEN, SECLABEL_IPV6,
 						   MARK_MAGIC_IDENTITY, ep,
@@ -1010,7 +1009,6 @@ static __always_inline int handle_ipv4_from_lxc(struct __ctx_buff *ctx, __u32 *d
 		}
 		/* proxy_port remains 0 in this case */
 
-		policy_mark_skip(ctx);
 		break;
 	default:
 		return DROP_UNKNOWN_CT;
@@ -1186,7 +1184,7 @@ ct_recreate4:
 				goto pass_to_stack;
 			}
 #endif /* ENABLE_HOST_ROUTING || ENABLE_ROUTING */
-			policy_clear_mark(ctx);
+
 			/* If the packet is from L7 LB it is coming from the host */
 			return ipv4_local_delivery(ctx, ETH_HLEN, SECLABEL_IPV4,
 						   MARK_MAGIC_IDENTITY, ip4,
@@ -1554,8 +1552,6 @@ ipv6_policy(struct __ctx_buff *ctx, struct ipv6hdr *ip6, int ifindex, __u32 src_
 	__u8 audited = 0;
 	__u8 auth_type = 0;
 
-	policy_clear_mark(ctx);
-
 	ipv6_addr_copy(&orig_sip, (union v6addr *)&ip6->saddr);
 
 	ct_buffer = map_lookup_elem(&CT_TAIL_CALL_BUFFER6, &zero);
@@ -1867,8 +1863,6 @@ ipv4_policy(struct __ctx_buff *ctx, struct iphdr *ip4, int ifindex, __u32 src_la
 	__u8 audited = 0;
 	__u8 auth_type = 0;
 	__u32 zero = 0;
-
-	policy_clear_mark(ctx);
 
 	orig_sip = ip4->saddr;
 

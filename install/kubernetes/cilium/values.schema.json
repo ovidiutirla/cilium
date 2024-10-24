@@ -152,6 +152,9 @@
                         "podSecurityContext": {
                           "type": "object"
                         },
+                        "priorityClassName": {
+                          "type": "string"
+                        },
                         "resources": {
                           "type": "object"
                         },
@@ -358,6 +361,9 @@
                         },
                         "podSecurityContext": {
                           "type": "object"
+                        },
+                        "priorityClassName": {
+                          "type": "string"
                         },
                         "resources": {
                           "type": "object"
@@ -701,8 +707,14 @@
           },
           "type": "object"
         },
+        "nodeSelector": {
+          "type": "object"
+        },
         "podLabels": {
           "type": "object"
+        },
+        "priorityClassName": {
+          "type": "string"
         },
         "tolerations": {
           "items": {},
@@ -1697,9 +1709,6 @@
           "properties": {
             "persistentKeepalive": {
               "type": "string"
-            },
-            "userspaceFallback": {
-              "type": "boolean"
             }
           },
           "type": "object"
@@ -2014,7 +2023,16 @@
               ]
             },
             "format": {
-              "type": "string"
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "format_json": {
+              "type": [
+                "null",
+                "object"
+              ]
             },
             "path": {
               "type": "string"
@@ -4896,6 +4914,17 @@
     },
     "routingMode": {
       "type": "string"
+    },
+    "scheduling": {
+      "properties": {
+        "mode": {
+          "enum": [
+            "anti-affinity",
+            "kube-scheduler"
+          ]
+        }
+      },
+      "type": "object"
     },
     "sctp": {
       "properties": {

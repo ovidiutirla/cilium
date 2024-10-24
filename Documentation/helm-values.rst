@@ -108,6 +108,10 @@
      - Security context to be added to spire agent pods. SecurityContext holds pod-level security attributes and common container settings. ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod
      - object
      - ``{}``
+   * - :spelling:ignore:`authentication.mutual.spire.install.agent.priorityClassName`
+     - The priority class to use for the spire agent
+     - string
+     - ``""``
    * - :spelling:ignore:`authentication.mutual.spire.install.agent.resources`
      - container resource limits & requests
      - object
@@ -139,7 +143,7 @@
    * - :spelling:ignore:`authentication.mutual.spire.install.initImage`
      - init container image of SPIRE agent and server
      - object
-     - ``{"digest":"sha256:c230832bd3b0be59a6c47ed64294f9ce71e91b327957920b6929a0caa8353140","override":null,"pullPolicy":"Always","repository":"docker.io/library/busybox","tag":"1.36.1","useDigest":true}``
+     - ``{"digest":"sha256:768e5c6f5cb6db0794eec98dc7a967f40631746c32232b78a3105fb946f3ab83","override":null,"pullPolicy":"Always","repository":"docker.io/library/busybox","tag":"1.37.0","useDigest":true}``
    * - :spelling:ignore:`authentication.mutual.spire.install.namespace`
      - SPIRE namespace to install into
      - string
@@ -196,6 +200,10 @@
      - Security context to be added to spire server pods. SecurityContext holds pod-level security attributes and common container settings. ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod
      - object
      - ``{}``
+   * - :spelling:ignore:`authentication.mutual.spire.install.server.priorityClassName`
+     - The priority class to use for the spire server
+     - string
+     - ``""``
    * - :spelling:ignore:`authentication.mutual.spire.install.server.resources`
      - container resource limits & requests
      - object
@@ -427,7 +435,7 @@
    * - :spelling:ignore:`certgen`
      - Configure certificate generation for Hubble integration. If hubble.tls.auto.method=cronJob, these values are used for the Kubernetes CronJob which will be scheduled regularly to (re)generate any certificates not provided manually.
      - object
-     - ``{"affinity":{},"annotations":{"cronJob":{},"job":{}},"extraVolumeMounts":[],"extraVolumes":[],"image":{"digest":"sha256:ab6b1928e9c5f424f6b0f51c68065b9fd85e2f8d3e5f21fbd1a3cb27e6fb9321","override":null,"pullPolicy":"Always","repository":"quay.io/cilium/certgen","tag":"v0.2.1","useDigest":true},"podLabels":{},"tolerations":[],"ttlSecondsAfterFinished":1800}``
+     - ``{"affinity":{},"annotations":{"cronJob":{},"job":{}},"extraVolumeMounts":[],"extraVolumes":[],"image":{"digest":"sha256:ab6b1928e9c5f424f6b0f51c68065b9fd85e2f8d3e5f21fbd1a3cb27e6fb9321","override":null,"pullPolicy":"Always","repository":"quay.io/cilium/certgen","tag":"v0.2.1","useDigest":true},"nodeSelector":{},"podLabels":{},"priorityClassName":"","tolerations":[],"ttlSecondsAfterFinished":1800}``
    * - :spelling:ignore:`certgen.affinity`
      - Affinity for certgen
      - object
@@ -444,10 +452,18 @@
      - Additional certgen volumes.
      - list
      - ``[]``
+   * - :spelling:ignore:`certgen.nodeSelector`
+     - Node selector for certgen ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector
+     - object
+     - ``{}``
    * - :spelling:ignore:`certgen.podLabels`
      - Labels to be added to hubble-certgen pods
      - object
      - ``{}``
+   * - :spelling:ignore:`certgen.priorityClassName`
+     - Priority class for certgen ref: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass
+     - string
+     - ``""``
    * - :spelling:ignore:`certgen.tolerations`
      - Node tolerations for pod assignment on nodes with taints ref: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
      - list
@@ -1136,10 +1152,6 @@
      - Controls WireGuard PersistentKeepalive option. Set 0s to disable.
      - string
      - ``"0s"``
-   * - :spelling:ignore:`encryption.wireguard.userspaceFallback`
-     - Enables the fallback to the user-space implementation (deprecated).
-     - bool
-     - ``false``
    * - :spelling:ignore:`endpointHealthChecking.enabled`
      - Enable connectivity health checking between virtual endpoints.
      - bool
@@ -1263,7 +1275,7 @@
    * - :spelling:ignore:`envoy.image`
      - Envoy container image.
      - object
-     - ``{"digest":"sha256:8fb91b68a377aac38bf1ec115fd1ceb476e7e55dc55aa77d768128d749aca8ac","override":null,"pullPolicy":"Always","repository":"quay.io/cilium/cilium-envoy","tag":"v1.30.6-1727741038-3056acb56ecfedf13398e5072c8f73320fe5e06f","useDigest":true}``
+     - ``{"digest":"sha256:41dc6530936fe06c462fca9c33ff31600a3dbc3b12b576448fe7b9aa6ee25672","override":null,"pullPolicy":"Always","repository":"quay.io/cilium/cilium-envoy","tag":"v1.30.6-1728896639-536a3fff090a10674376a0cfd97d8527b453a455","useDigest":true}``
    * - :spelling:ignore:`envoy.livenessProbe.failureThreshold`
      - failure threshold of liveness probe
      - int
@@ -1277,9 +1289,13 @@
      - string
      - Defaults to the default log level of the Cilium Agent - ``info``
    * - :spelling:ignore:`envoy.log.format`
-     - The format string to use for laying out the log message metadata of Envoy.
+     - The format string to use for laying out the log message metadata of Envoy. If specified, Envoy will use text format output. This setting is mutually exclusive with envoy.log.format_json.
      - string
      - ``"[%Y-%m-%d %T.%e][%t][%l][%n] [%g:%#] %v"``
+   * - :spelling:ignore:`envoy.log.format_json`
+     - The JSON logging format to use for Envoy. This setting is mutually exclusive with envoy.log.format. ref: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/bootstrap/v3/bootstrap.proto#envoy-v3-api-field-config-bootstrap-v3-bootstrap-applicationlogconfig-logformat-json-format
+     - string
+     - ``nil``
    * - :spelling:ignore:`envoy.log.path`
      - Path to a separate Envoy log file, if any. Defaults to /dev/stdout.
      - string
@@ -1901,7 +1917,7 @@
      - int
      - ``31234``
    * - :spelling:ignore:`hubble.relay.service.type`
-     - - The type of service used for Hubble Relay access, either ClusterIP or NodePort.
+     - - The type of service used for Hubble Relay access, either ClusterIP, NodePort or LoadBalancer.
      - string
      - ``"ClusterIP"``
    * - :spelling:ignore:`hubble.relay.sortBufferDrainTimeout`
@@ -3100,6 +3116,14 @@
      - Enable native-routing mode or tunneling mode. Possible values:   - ""   - native   - tunnel
      - string
      - ``"tunnel"``
+   * - :spelling:ignore:`scheduling`
+     - Scheduling configurations for cilium pods
+     - object
+     - ``{"mode":"anti-affinity"}``
+   * - :spelling:ignore:`scheduling.mode`
+     - Mode specifies how Cilium daemonset pods should be scheduled to Nodes. ``anti-affinity`` mode applies a pod anti-affinity rule to the cilium daemonset. Pod anti-affinity may significantly impact scheduling throughput for large clusters. See: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity ``kube-scheduler`` mode forgoes the anti-affinity rule for full scheduling throughput. Kube-scheduler avoids host port conflict when scheduling pods.
+     - string
+     - Defaults to apply a pod anti-affinity rule to the agent pod - ``anti-affinity``
    * - :spelling:ignore:`sctp`
      - SCTP Configuration Values
      - object

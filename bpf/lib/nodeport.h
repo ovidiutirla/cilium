@@ -80,6 +80,18 @@ nodeport_add_tunnel_encap(struct __ctx_buff *ctx, __u32 src_ip, __be16 src_port,
 	if (ctx_is_skb())
 		src_ip = 0;
 
+	/* Append L2 hdr before redirecting to tunnel netdev.
+	 * Otherwise, the kernel will drop such request in
+	 * https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/tree/net/core/filter.c?h=v6.7.4#n2147
+	 */
+	if (ETH_HLEN == 0) {
+		int ret;
+
+		ret = add_l2_hdr(ctx);
+		if (ret != 0)
+			return ret;
+	}
+
 	return __encap_with_nodeid(ctx, src_ip, src_port, dst_ip,
 				   src_sec_identity, dst_sec_identity, NOT_VTEP_DST,
 				   ct_reason, monitor, ifindex);
@@ -95,6 +107,18 @@ nodeport_add_tunnel_encap_opt(struct __ctx_buff *ctx, __u32 src_ip, __be16 src_p
 	/* Let kernel choose the outer source ip */
 	if (ctx_is_skb())
 		src_ip = 0;
+
+	/* Append L2 hdr before redirecting to tunnel netdev.
+	 * Otherwise, the kernel will drop such request in
+	 * https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/tree/net/core/filter.c?h=v6.7.4#n2147
+	 */
+	if (ETH_HLEN == 0) {
+		int ret;
+
+		ret = add_l2_hdr(ctx);
+		if (ret != 0)
+			return ret;
+	}
 
 	return __encap_with_nodeid_opt(ctx, src_ip, src_port, dst_ip,
 				       src_sec_identity, dst_sec_identity, NOT_VTEP_DST,
@@ -149,7 +173,7 @@ nodeport_fib_lookup_and_redirect(struct __ctx_buff *ctx,
 static __always_inline bool nodeport_uses_dsr6(const struct lb6_service *svc,
 					       const struct ipv6_ct_tuple *tuple)
 {
-	return nodeport_uses_dsr(svc->flags2 & SVC_FLAG_FWD_MODE_FLIP,
+	return nodeport_uses_dsr(svc->flags2 & SVC_FLAG_FWD_MODE_DSR,
 				 tuple->nexthdr);
 }
 
@@ -1211,17 +1235,6 @@ int tail_nodeport_nat_egress_ipv6(struct __ctx_buff *ctx)
 	if (tunnel_endpoint) {
 		__be16 src_port;
 
-#if __ctx_is == __ctx_skb
-		{
-			/* See the corresponding v4 path for details */
-			bool l2_hdr_required = false;
-
-			ret = maybe_add_l2_hdr(ctx, ENCAP_IFINDEX, &l2_hdr_required);
-			if (ret != 0)
-				goto drop_err;
-		}
-#endif
-
 		src_port = tunnel_gen_src_port_v6(&tuple);
 
 		ret = nodeport_add_tunnel_encap(ctx,
@@ -1473,6 +1486,11 @@ skip_service_lookup:
 #endif
 #endif /* ENABLE_DSR */
 
+#ifndef ENABLE_MASQUERADE_IPV6
+		if (!is_svc_proto)
+			return CTX_ACT_OK;
+#endif /* ENABLE_MASQUERADE_IPV6 */
+
 		ctx_store_meta(ctx, CB_NAT_46X64, 0);
 		ctx_store_meta(ctx, CB_SRC_LABEL, src_sec_identity);
 		return tail_call_internal(ctx, CILIUM_CALL_IPV6_NODEPORT_NAT_INGRESS,
@@ -1649,7 +1667,7 @@ int tail_handle_nat_fwd_ipv6(struct __ctx_buff *ctx)
 static __always_inline bool nodeport_uses_dsr4(const struct lb4_service *svc,
 					       const struct ipv4_ct_tuple *tuple)
 {
-	return nodeport_uses_dsr(svc->flags2 & SVC_FLAG_FWD_MODE_FLIP,
+	return nodeport_uses_dsr(svc->flags2 & SVC_FLAG_FWD_MODE_DSR,
 				 tuple->nexthdr);
 }
 
@@ -2781,20 +2799,6 @@ int tail_nodeport_nat_egress_ipv4(struct __ctx_buff *ctx)
 	if (tunnel_endpoint) {
 		__be16 src_port;
 
-#if __ctx_is == __ctx_skb
-		{
-			/* Append L2 hdr before redirecting to tunnel netdev.
-			 * Otherwise, the kernel will drop such request in
-			 * https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/tree/net/core/filter.c?h=v6.7.4#n2147
-			 */
-			bool l2_hdr_required = false;
-
-			ret = maybe_add_l2_hdr(ctx, ENCAP_IFINDEX, &l2_hdr_required);
-			if (ret != 0)
-				goto drop_err;
-		}
-#endif
-
 		src_port = tunnel_gen_src_port_v4(&tuple);
 
 		/* The request came from outside, so we need to
@@ -3067,6 +3071,14 @@ skip_service_lookup:
 		}
 #endif
 #endif /* ENABLE_DSR */
+
+#ifndef ENABLE_MASQUERADE_IPV4
+		/* When BPF-Masquerading is off, we can skip the revSNAT path via
+		 * CILIUM_CALL_IPV4_NODEPORT_NAT_INGRESS if the packet is ICMP.
+		 */
+		if (!is_svc_proto)
+			return CTX_ACT_OK;
+#endif /* ENABLE_MASQUERADE_IPV4 */
 
 		ctx_store_meta(ctx, CB_SRC_LABEL, src_sec_identity);
 		/* For NAT64 we might see an IPv4 reply from the backend to

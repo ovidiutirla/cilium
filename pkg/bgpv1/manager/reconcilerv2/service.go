@@ -47,6 +47,7 @@ type ServiceReconciler struct {
 	peerAdvert   *CiliumPeerAdvertisement
 	svcDiffStore store.DiffStore[*slim_corev1.Service]
 	epDiffStore  store.DiffStore[*k8s.Endpoints]
+	metadata     map[string]ServiceReconcilerMetadata
 }
 
 func NewServiceReconciler(in ServiceReconcilerIn) ServiceReconcilerOut {
@@ -60,6 +61,7 @@ func NewServiceReconciler(in ServiceReconcilerIn) ServiceReconcilerOut {
 			peerAdvert:   in.PeerAdvert,
 			svcDiffStore: in.SvcDiffStore,
 			epDiffStore:  in.EPDiffStore,
+			metadata:     make(map[string]ServiceReconcilerMetadata),
 		},
 	}
 }
@@ -72,41 +74,42 @@ type ServiceReconcilerMetadata struct {
 }
 
 func (r *ServiceReconciler) getMetadata(i *instance.BGPInstance) ServiceReconcilerMetadata {
-	if _, found := i.Metadata[r.Name()]; !found {
-		i.Metadata[r.Name()] = ServiceReconcilerMetadata{
-			ServicePaths:          make(ResourceAFPathsMap),
-			ServiceAdvertisements: make(PeerAdvertisements),
-			ServiceRoutePolicies:  make(ResourceRoutePolicyMap),
-		}
-	}
-	return i.Metadata[r.Name()].(ServiceReconcilerMetadata)
+	return r.metadata[i.Name]
 }
 
 func (r *ServiceReconciler) setMetadata(i *instance.BGPInstance, metadata ServiceReconcilerMetadata) {
-	i.Metadata[r.Name()] = metadata
+	r.metadata[i.Name] = metadata
 }
 
 func (r *ServiceReconciler) Name() string {
-	return "Service"
+	return ServiceReconcilerName
 }
 
 func (r *ServiceReconciler) Priority() int {
-	return 40
+	return ServiceReconcilerPriority
 }
 
 func (r *ServiceReconciler) Init(i *instance.BGPInstance) error {
 	if i == nil {
 		return fmt.Errorf("BUG: service reconciler initialization with nil BGPInstance")
 	}
-	r.svcDiffStore.InitDiff(r.diffID(i.Global.ASN))
-	r.epDiffStore.InitDiff(r.diffID(i.Global.ASN))
+	r.svcDiffStore.InitDiff(r.diffID(i))
+	r.epDiffStore.InitDiff(r.diffID(i))
+
+	r.metadata[i.Name] = ServiceReconcilerMetadata{
+		ServicePaths:          make(ResourceAFPathsMap),
+		ServiceAdvertisements: make(PeerAdvertisements),
+		ServiceRoutePolicies:  make(ResourceRoutePolicyMap),
+	}
 	return nil
 }
 
 func (r *ServiceReconciler) Cleanup(i *instance.BGPInstance) {
 	if i != nil {
-		r.svcDiffStore.CleanupDiff(r.diffID(i.Global.ASN))
-		r.epDiffStore.CleanupDiff(r.diffID(i.Global.ASN))
+		r.svcDiffStore.CleanupDiff(r.diffID(i))
+		r.epDiffStore.CleanupDiff(r.diffID(i))
+
+		delete(r.metadata, i.Name)
 	}
 }
 
@@ -301,34 +304,16 @@ func (r *ServiceReconciler) getDesiredSvcRoutePolicies(p ReconcileParams, desire
 func (r *ServiceReconciler) reconcilePaths(ctx context.Context, p ReconcileParams, desiredSvcPaths ResourceAFPathsMap) error {
 	var err error
 	metadata := r.getMetadata(p.BGPInstance)
-	for svc, desiredAFPaths := range desiredSvcPaths {
-		// check if service exists
-		currentAFPaths, exists := metadata.ServicePaths[svc]
-		if !exists && len(desiredAFPaths) == 0 {
-			// service does not exist in our local state, and there is nothing to advertise
-			continue
-		}
 
-		// reconcile service paths
-		updatedAFPaths, rErr := ReconcileAFPaths(&ReconcileAFPathsParams{
-			Logger:       r.logger.WithField(types.InstanceLogField, p.DesiredConfig.Name),
-			Ctx:          ctx,
-			Router:       p.BGPInstance.Router,
-			DesiredPaths: desiredAFPaths,
-			CurrentPaths: currentAFPaths,
-		})
+	metadata.ServicePaths, err = ReconcileResourceAFPaths(ReconcileResourceAFPathsParams{
+		Logger:                 r.logger.WithField(types.InstanceLogField, p.DesiredConfig.Name),
+		Ctx:                    ctx,
+		Router:                 p.BGPInstance.Router,
+		DesiredResourceAFPaths: desiredSvcPaths,
+		CurrentResourceAFPaths: metadata.ServicePaths,
+	})
 
-		if rErr == nil && len(desiredAFPaths) == 0 {
-			// no error is reported and desiredAFPaths is empty, we should delete the service
-			delete(metadata.ServicePaths, svc)
-		} else {
-			// update service paths with returned updatedAFPaths even if there was an error.
-			metadata.ServicePaths[svc] = updatedAFPaths
-		}
-		err = errors.Join(err, rErr)
-	}
 	r.setMetadata(p.BGPInstance, metadata)
-
 	return err
 }
 
@@ -411,8 +396,8 @@ func (r *ServiceReconciler) resolveSvcFromEndpoints(eps *k8s.Endpoints) (*slim_c
 
 func (r *ServiceReconciler) fullReconciliationServiceList(p ReconcileParams) (toReconcile []*slim_corev1.Service, toWithdraw []resource.Key, err error) {
 	// re-init diff in diffstores, so that it contains only changes since the last full reconciliation.
-	r.svcDiffStore.InitDiff(r.diffID(p.BGPInstance.Global.ASN))
-	r.epDiffStore.InitDiff(r.diffID(p.BGPInstance.Global.ASN))
+	r.svcDiffStore.InitDiff(r.diffID(p.BGPInstance))
+	r.epDiffStore.InitDiff(r.diffID(p.BGPInstance))
 
 	// check for services which are no longer present
 	serviceAFPaths := r.getMetadata(p.BGPInstance).ServicePaths
@@ -439,7 +424,7 @@ func (r *ServiceReconciler) fullReconciliationServiceList(p ReconcileParams) (to
 // diffReconciliationServiceList returns a list of services to reconcile and to withdraw when
 // performing partial (diff) service reconciliation.
 func (r *ServiceReconciler) diffReconciliationServiceList(p ReconcileParams) (toReconcile []*slim_corev1.Service, toWithdraw []resource.Key, err error) {
-	upserted, deleted, err := r.svcDiffStore.Diff(r.diffID(p.BGPInstance.Global.ASN))
+	upserted, deleted, err := r.svcDiffStore.Diff(r.diffID(p.BGPInstance))
 	if err != nil {
 		return nil, nil, fmt.Errorf("svc store diff: %w", err)
 	}
@@ -450,7 +435,7 @@ func (r *ServiceReconciler) diffReconciliationServiceList(p ReconcileParams) (to
 	// We don't handle service deletion here since we only see
 	// the key, we cannot resolve associated service, so we have
 	// nothing to do.
-	epsUpserted, _, err := r.epDiffStore.Diff(r.diffID(p.BGPInstance.Global.ASN))
+	epsUpserted, _, err := r.epDiffStore.Diff(r.diffID(p.BGPInstance))
 	if err != nil {
 		return nil, nil, fmt.Errorf("EPs store diff: %w", err)
 	}
@@ -834,8 +819,8 @@ func (r *ServiceReconciler) getClusterIPRoutePolicy(p ReconcileParams, peer stri
 	return policy, nil
 }
 
-func (r *ServiceReconciler) diffID(asn uint32) string {
-	return fmt.Sprintf("%s-%d", r.Name(), asn)
+func (r *ServiceReconciler) diffID(instance *instance.BGPInstance) string {
+	return fmt.Sprintf("%s-%s", r.Name(), instance.Name)
 }
 
 // checkServiceAdvertisement checks if the service advertisement is enabled in the advertisement.
