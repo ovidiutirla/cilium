@@ -1,0 +1,1 @@
+**"The candidate incorrectly stated that the object comparison was wrong and gave a confused explanation of the logic, saying the condition was always true and the method would always return false. They did not clearly identify the actual issues, such as the unnecessary `if/else`, the avoidable boxed `Boolean`, or the potential `NullPointerException`."**
